@@ -1,5 +1,6 @@
 #import "MLNMapView+Impl.h"
 #import "MLNMapView_Private.h"
+#import "MLNStyleValue_Private.h"
 
 #include <mbgl/annotation/annotation.hpp>
 #include <mbgl/layermanager/layer_manager.hpp>
@@ -6685,6 +6686,69 @@ static void *windowScreenContext = &windowScreenContext;
   std::vector<mbgl::Feature> features = _rendererFrontend->getRenderer()->queryRenderedFeatures(
       screenBox, {optionalLayerIDs, optionalFilter});
   return MLNFeaturesFromMBGLFeatures(features);
+}
+
+// MARK: - Feature State -
+
+- (void)setFeatureStateForSource:(nonnull NSString *)sourceID
+                     sourceLayer:(nullable NSString *)sourceLayer
+                       featureID:(nonnull NSString *)featureID
+                           state:(nonnull NSDictionary<NSString *, id> *)state {
+    MLNAssertIsMainThread();
+    if (!sourceID || !featureID || !state.count) return;
+
+    mbgl::FeatureState mbglState;
+    for (NSString *key in state) {
+        NSExpression *expression = [NSExpression expressionForConstantValue:state[key]];
+        mbglState[key.UTF8String] = expression.mgl_constantMBGLValue;
+    }
+
+    _rendererFrontend->getRenderer()->setFeatureState(
+        sourceID.UTF8String,
+        sourceLayer ? std::optional<std::string>(sourceLayer.UTF8String) : std::nullopt,
+        featureID.UTF8String,
+        mbglState);
+
+    [self setNeedsRerender];
+}
+
+- (nullable NSDictionary<NSString *, id> *)featureStateForSource:(nonnull NSString *)sourceID
+                                                     sourceLayer:(nullable NSString *)sourceLayer
+                                                       featureID:(nonnull NSString *)featureID {
+    MLNAssertIsMainThread();
+    if (!sourceID || !featureID) return nil;
+
+    mbgl::FeatureState mbglState;
+    _rendererFrontend->getRenderer()->getFeatureState(
+        mbglState,
+        sourceID.UTF8String,
+        sourceLayer ? std::optional<std::string>(sourceLayer.UTF8String) : std::nullopt,
+        featureID.UTF8String);
+
+    if (mbglState.empty()) return nil;
+
+    NSMutableDictionary *result = [NSMutableDictionary dictionaryWithCapacity:mbglState.size()];
+    for (const auto &pair : mbglState) {
+        result[[NSString stringWithUTF8String:pair.first.c_str()]] =
+            MLNJSONObjectFromMBGLValue(pair.second);
+    }
+    return [result copy];
+}
+
+- (void)removeFeatureStateForSource:(nonnull NSString *)sourceID
+                        sourceLayer:(nullable NSString *)sourceLayer
+                          featureID:(nullable NSString *)featureID
+                           stateKey:(nullable NSString *)stateKey {
+    MLNAssertIsMainThread();
+    if (!sourceID) return;
+
+    _rendererFrontend->getRenderer()->removeFeatureState(
+        sourceID.UTF8String,
+        sourceLayer ? std::optional<std::string>(sourceLayer.UTF8String) : std::nullopt,
+        featureID ? std::optional<std::string>(featureID.UTF8String) : std::nullopt,
+        stateKey ? std::optional<std::string>(stateKey.UTF8String) : std::nullopt);
+
+    [self setNeedsRerender];
 }
 
 // MARK: - Utility -

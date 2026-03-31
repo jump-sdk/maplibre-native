@@ -2256,6 +2256,66 @@ of north, the map will automatically snap to exact north.
                                          predicate:(nullable NSPredicate *)predicate
     NS_SWIFT_NAME(visibleFeatures(in:styleLayerIdentifiers:predicate:));
 
+// MARK: Managing Feature State
+
+/**
+ Sets the state of a feature. Feature state is a set of user-defined key-value
+ pairs assigned to a feature at runtime for use in styling expressions via
+ `["feature-state", "<key>"]`.
+
+ The state object is merged with any existing state on the feature. Features are
+ identified by their `id` property, which must be present in the source data as
+ a string or number.
+
+ This variant accepts explicit source, source-layer, and feature identifiers,
+ making it suitable for both ``MLNShapeSource`` and ``MLNVectorTileSource``.
+
+ @param sourceID   Identifier of the source containing the feature.
+ @param sourceLayer Identifier of the source layer (required for vector tile
+                    sources, pass `nil` for GeoJSON sources).
+ @param featureID  The feature identifier (the value of the feature's `id`
+                   property in the source data).
+ @param state      Key-value pairs to merge into the feature's current state.
+                   Values must be valid JSON types.
+ */
+- (void)setFeatureStateForSource:(nonnull NSString *)sourceID
+                     sourceLayer:(nullable NSString *)sourceLayer
+                       featureID:(nonnull NSString *)featureID
+                           state:(nonnull NSDictionary<NSString *, id> *)state
+    NS_SWIFT_NAME(setFeatureState(forSource:sourceLayer:featureID:state:));
+
+/**
+ Returns the current feature state for a given feature.
+
+ @param sourceID   Identifier of the source containing the feature.
+ @param sourceLayer Identifier of the source layer (required for vector tile
+                    sources, pass `nil` for GeoJSON sources).
+ @param featureID  The feature identifier.
+ @return A dictionary of the feature's current state, or `nil` if no state has
+         been set.
+ */
+- (nullable NSDictionary<NSString *, id> *)featureStateForSource:(nonnull NSString *)sourceID
+                                                     sourceLayer:(nullable NSString *)sourceLayer
+                                                       featureID:(nonnull NSString *)featureID
+    NS_SWIFT_NAME(featureState(forSource:sourceLayer:featureID:));
+
+/**
+ Removes state from a feature.
+
+ @param sourceID   Identifier of the source containing the feature.
+ @param sourceLayer Identifier of the source layer (required for vector tile
+                    sources, pass `nil` for GeoJSON sources).
+ @param featureID  The feature identifier. Pass `nil` to remove state from all
+                   features in the source (or source layer).
+ @param stateKey   The key to remove. Pass `nil` to remove all state for the
+                   feature.
+ */
+- (void)removeFeatureStateForSource:(nonnull NSString *)sourceID
+                        sourceLayer:(nullable NSString *)sourceLayer
+                          featureID:(nullable NSString *)featureID
+                           stateKey:(nullable NSString *)stateKey
+    NS_SWIFT_NAME(removeFeatureState(forSource:sourceLayer:featureID:stateKey:));
+
 // MARK: Debugging the Map
 
 /**
