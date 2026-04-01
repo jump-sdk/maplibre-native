@@ -45,36 +45,15 @@ void SourceFeatureState::getState(FeatureState& result,
 void SourceFeatureState::coalesceChanges(std::vector<RenderTile>& tiles) {
     MLN_TRACE_FUNC();
 
-    LayerFeatureStates changes;
-    for (const auto& layerStatesEntry : stateChanges) {
-        const auto& sourceLayer = layerStatesEntry.first;
-        FeatureStates layerStates;
-        for (const auto& featureStatesEntry : stateChanges[sourceLayer]) {
-            const auto& featureID = featureStatesEntry.first;
-            for (const auto& stateEntry : stateChanges[sourceLayer][featureID]) {
-                const auto& stateKey = stateEntry.first;
-                const auto& stateVal = stateEntry.second;
-
-                auto currentState = currentStates[sourceLayer][featureID].find(stateKey);
-                if (currentState != currentStates[sourceLayer][featureID].end()) {
-                    currentState->second = stateVal;
-                } else {
-                    currentStates[sourceLayer][featureID].insert(std::make_pair(stateKey, stateVal));
-                }
-            }
-            layerStates[featureID] = currentStates[sourceLayer][featureID];
-        }
-        changes[sourceLayer] = std::move(layerStates);
-    }
-
+    // Process deletedStates BEFORE stateChanges so that a remove+set in the same
+    // frame results in the set winning. Previously, deletes were processed after sets,
+    // causing changes[sourceLayer] to be overwritten with empty state.
     for (const auto& layerStatesEntry : deletedStates) {
         const auto& sourceLayer = layerStatesEntry.first;
-        FeatureStates layerStates = {{}, {}};
 
         if (deletedStates[sourceLayer].empty()) {
             for (const auto& featureStatesEntry : currentStates[sourceLayer]) {
                 const auto& featureID = featureStatesEntry.first;
-                layerStates[featureID] = {};
                 currentStates[sourceLayer][featureID] = {};
             }
         } else {
@@ -88,23 +67,39 @@ void SourceFeatureState::coalesceChanges(std::vector<RenderTile>& tiles) {
                         currentStates[sourceLayer][featureID].erase(stateEntry.first);
                     }
                 }
-                layerStates[featureID] = currentStates[sourceLayer][featureID];
             }
         }
-        changes[sourceLayer] = std::move(layerStates);
+    }
+
+    // Now process stateChanges — these take precedence over deletes.
+    for (const auto& layerStatesEntry : stateChanges) {
+        const auto& sourceLayer = layerStatesEntry.first;
+        for (const auto& featureStatesEntry : stateChanges[sourceLayer]) {
+            const auto& featureID = featureStatesEntry.first;
+            for (const auto& stateEntry : stateChanges[sourceLayer][featureID]) {
+                const auto& stateKey = stateEntry.first;
+                const auto& stateVal = stateEntry.second;
+
+                auto currentState = currentStates[sourceLayer][featureID].find(stateKey);
+                if (currentState != currentStates[sourceLayer][featureID].end()) {
+                    currentState->second = stateVal;
+                } else {
+                    currentStates[sourceLayer][featureID].insert(std::make_pair(stateKey, stateVal));
+                }
+            }
+        }
     }
 
     stateChanges.clear();
     deletedStates.clear();
 
-    changes.insert(currentStates.begin(), currentStates.end());
-
-    if (changes.empty()) {
+    // Build the full current state to send to tiles.
+    if (currentStates.empty()) {
         return;
     }
 
     for (auto& tile : tiles) {
-        tile.setFeatureState(changes);
+        tile.setFeatureState(currentStates);
     }
 }
 

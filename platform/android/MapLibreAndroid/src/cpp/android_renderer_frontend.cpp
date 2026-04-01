@@ -165,6 +165,16 @@ void AndroidRendererFrontend::setFeatureState(const std::string& sourceID,
     mapRenderer.actor().invoke(&Renderer::setFeatureState, sourceID, sourceLayerID, featureID, state);
 }
 
+FeatureState AndroidRendererFrontend::getFeatureState(const std::string& sourceID,
+                                                       const std::optional<std::string>& sourceLayerID,
+                                                       const std::string& featureID) const {
+    // Use the return-value overload of Renderer::getFeatureState which is compatible
+    // with actor().ask() (no output reference param).
+    FeatureState (Renderer::*fn)(const std::string&, const std::optional<std::string>&, const std::string&)
+        const = &Renderer::getFeatureState;
+    return mapRenderer.actor().ask(fn, sourceID, sourceLayerID, featureID).get();
+}
+
 void AndroidRendererFrontend::removeFeatureState(const std::string& sourceID,
                                                   const std::optional<std::string>& sourceLayerID,
                                                   const std::optional<std::string>& featureID,

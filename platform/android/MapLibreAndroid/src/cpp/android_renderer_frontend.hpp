@@ -69,6 +69,10 @@ public:
                          const std::string& featureID,
                          const FeatureState& state);
 
+    FeatureState getFeatureState(const std::string& sourceID,
+                                const std::optional<std::string>& sourceLayerID,
+                                const std::string& featureID) const;
+
     void removeFeatureState(const std::string& sourceID,
                             const std::optional<std::string>& sourceLayerID,
                             const std::optional<std::string>& featureID,

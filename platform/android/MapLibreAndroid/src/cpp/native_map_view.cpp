@@ -1038,14 +1038,28 @@ void NativeMapView::setFeatureState(JNIEnv& env,
     map->triggerRepaint();
 }
 
-jni::Local<jni::Object<gson::JsonObject>> NativeMapView::getFeatureState(JNIEnv&,
-                                                                          const jni::String&,
-                                                                          const jni::String&,
-                                                                          const jni::String&) {
-    // TODO: Renderer::getFeatureState uses an output reference param that can't be forwarded
-    // through the actor's member-function-pointer message API. For now, return null.
-    // setFeatureState and removeFeatureState (fire-and-forget) work via actor().invoke().
-    return jni::Local<jni::Object<gson::JsonObject>>();
+jni::Local<jni::Object<gson::JsonObject>> NativeMapView::getFeatureState(JNIEnv& env,
+                                                                          const jni::String& sourceId,
+                                                                          const jni::String& sourceLayerId,
+                                                                          const jni::String& featureId) {
+    std::string sourceIDStr = jni::Make<std::string>(env, sourceId);
+    std::string featureIDStr = jni::Make<std::string>(env, featureId);
+    std::optional<std::string> sourceLayerIDStr;
+    if (sourceLayerId) {
+        sourceLayerIDStr = jni::Make<std::string>(env, sourceLayerId);
+    }
+
+    mbgl::FeatureState mbglState = rendererFrontend->getFeatureState(sourceIDStr, sourceLayerIDStr, featureIDStr);
+
+    if (mbglState.empty()) {
+        return jni::Local<jni::Object<gson::JsonObject>>();
+    }
+
+    mbgl::PropertyMap propertyMap;
+    for (const auto& entry : mbglState) {
+        propertyMap[entry.first] = entry.second;
+    }
+    return gson::JsonObject::New(env, propertyMap);
 }
 
 void NativeMapView::removeFeatureState(JNIEnv& env,
