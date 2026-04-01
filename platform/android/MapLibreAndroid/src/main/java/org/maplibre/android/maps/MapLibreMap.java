@@ -2286,6 +2286,27 @@ public final class MapLibreMap {
   }
 
   //
+  // Feature State API
+  //
+
+  public void setFeatureState(@NonNull String sourceId, @Nullable String sourceLayerId,
+                              @NonNull String featureId, @NonNull java.util.HashMap<String, Object> state) {
+    nativeMapView.setFeatureState(sourceId, sourceLayerId, featureId, state);
+  }
+
+  @Nullable
+  public java.util.HashMap<String, Object> getFeatureState(@NonNull String sourceId,
+                                                            @Nullable String sourceLayerId,
+                                                            @NonNull String featureId) {
+    return nativeMapView.getFeatureState(sourceId, sourceLayerId, featureId);
+  }
+
+  public void removeFeatureState(@NonNull String sourceId, @Nullable String sourceLayerId,
+                                 @Nullable String featureId, @Nullable String stateKey) {
+    nativeMapView.removeFeatureState(sourceId, sourceLayerId, featureId, stateKey);
+  }
+
+  //
   // LocationComponent
   //
 

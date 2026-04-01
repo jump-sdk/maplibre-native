@@ -158,6 +158,20 @@ bool AndroidRendererFrontend::getTileCacheEnabled() const {
     return mapRenderer.actor().ask(&Renderer::getTileCacheEnabled).get();
 }
 
+void AndroidRendererFrontend::setFeatureState(const std::string& sourceID,
+                                               const std::optional<std::string>& sourceLayerID,
+                                               const std::string& featureID,
+                                               const FeatureState& state) {
+    mapRenderer.actor().invoke(&Renderer::setFeatureState, sourceID, sourceLayerID, featureID, state);
+}
+
+void AndroidRendererFrontend::removeFeatureState(const std::string& sourceID,
+                                                  const std::optional<std::string>& sourceLayerID,
+                                                  const std::optional<std::string>& featureID,
+                                                  const std::optional<std::string>& stateKey) {
+    mapRenderer.actor().invoke(&Renderer::removeFeatureState, sourceID, sourceLayerID, featureID, stateKey);
+}
+
 void AndroidRendererFrontend::reduceMemoryUse() {
     mapRenderer.actor().invoke(&Renderer::reduceMemoryUse);
 }

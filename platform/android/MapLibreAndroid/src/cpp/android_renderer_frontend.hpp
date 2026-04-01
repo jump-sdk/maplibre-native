@@ -10,6 +10,7 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include <mbgl/util/feature.hpp>
 #include <mbgl/util/geojson.hpp>
 
 #include "map_renderer.hpp"
@@ -61,6 +62,17 @@ public:
                                                  const std::string& extension,
                                                  const std::string& extensionField,
                                                  const std::optional<std::map<std::string, mbgl::Value>>& args) const;
+
+    // Feature state
+    void setFeatureState(const std::string& sourceID,
+                         const std::optional<std::string>& sourceLayerID,
+                         const std::string& featureID,
+                         const FeatureState& state);
+
+    void removeFeatureState(const std::string& sourceID,
+                            const std::optional<std::string>& sourceLayerID,
+                            const std::optional<std::string>& featureID,
+                            const std::optional<std::string>& stateKey);
 
     // Memory
     void setTileCacheEnabled(bool);

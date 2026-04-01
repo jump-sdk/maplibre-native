@@ -321,4 +321,19 @@ interface NativeMap {
   long getNativePtr();
 
   void addSnapshotCallback(@NonNull MapLibreMap.SnapshotReadyCallback callback);
+
+  //
+  // Feature State API
+  //
+
+  void setFeatureState(@NonNull String sourceId, @Nullable String sourceLayerId,
+                       @NonNull String featureId, @NonNull java.util.HashMap<String, Object> state);
+
+  @Nullable
+  java.util.HashMap<String, Object> getFeatureState(@NonNull String sourceId,
+                                                     @Nullable String sourceLayerId,
+                                                     @NonNull String featureId);
+
+  void removeFeatureState(@NonNull String sourceId, @Nullable String sourceLayerId,
+                          @Nullable String featureId, @Nullable String stateKey);
 }

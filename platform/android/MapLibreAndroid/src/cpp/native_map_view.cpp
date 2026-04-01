@@ -1013,6 +1013,64 @@ jni::Local<jni::Array<jni::Object<geojson::Feature>>> NativeMapView::queryRender
     return Feature::convert(env, rendererFrontend->queryRenderedFeatures(box, {layers, toFilter(env, jfilter)}));
 }
 
+void NativeMapView::setFeatureState(JNIEnv& env,
+                                    const jni::String& sourceId,
+                                    const jni::String& sourceLayerId,
+                                    const jni::String& featureId,
+                                    const jni::Object<gson::JsonObject>& state) {
+    std::string sourceIDStr = jni::Make<std::string>(env, sourceId);
+    std::string featureIDStr = jni::Make<std::string>(env, featureId);
+    std::optional<std::string> sourceLayerIDStr;
+    if (sourceLayerId) {
+        sourceLayerIDStr = jni::Make<std::string>(env, sourceLayerId);
+    }
+
+    // Convert JsonObject to mbgl::FeatureState via PropertyMap
+    mbgl::FeatureState mbglState;
+    if (state) {
+        auto propertyMap = gson::JsonObject::convert(env, state);
+        for (auto& entry : propertyMap) {
+            mbglState[entry.first] = entry.second;
+        }
+    }
+
+    rendererFrontend->setFeatureState(sourceIDStr, sourceLayerIDStr, featureIDStr, mbglState);
+    map->triggerRepaint();
+}
+
+jni::Local<jni::Object<gson::JsonObject>> NativeMapView::getFeatureState(JNIEnv&,
+                                                                          const jni::String&,
+                                                                          const jni::String&,
+                                                                          const jni::String&) {
+    // TODO: Renderer::getFeatureState uses an output reference param that can't be forwarded
+    // through the actor's member-function-pointer message API. For now, return null.
+    // setFeatureState and removeFeatureState (fire-and-forget) work via actor().invoke().
+    return jni::Local<jni::Object<gson::JsonObject>>();
+}
+
+void NativeMapView::removeFeatureState(JNIEnv& env,
+                                       const jni::String& sourceId,
+                                       const jni::String& sourceLayerId,
+                                       const jni::String& featureId,
+                                       const jni::String& stateKey) {
+    std::string sourceIDStr = jni::Make<std::string>(env, sourceId);
+    std::optional<std::string> sourceLayerIDStr;
+    if (sourceLayerId) {
+        sourceLayerIDStr = jni::Make<std::string>(env, sourceLayerId);
+    }
+    std::optional<std::string> featureIDStr;
+    if (featureId) {
+        featureIDStr = jni::Make<std::string>(env, featureId);
+    }
+    std::optional<std::string> stateKeyStr;
+    if (stateKey) {
+        stateKeyStr = jni::Make<std::string>(env, stateKey);
+    }
+
+    rendererFrontend->removeFeatureState(sourceIDStr, sourceLayerIDStr, featureIDStr, stateKeyStr);
+    map->triggerRepaint();
+}
+
 jni::Local<jni::Object<Light>> NativeMapView::getLight(JNIEnv& env) {
     mbgl::style::Light* light = map->getStyle().getLight();
     if (light) {
@@ -1417,6 +1475,9 @@ void NativeMapView::registerNative(jni::JNIEnv& env) {
         METHOD(&NativeMapView::queryShapeAnnotations, "nativeQueryShapeAnnotations"),
         METHOD(&NativeMapView::queryRenderedFeaturesForPoint, "nativeQueryRenderedFeaturesForPoint"),
         METHOD(&NativeMapView::queryRenderedFeaturesForBox, "nativeQueryRenderedFeaturesForBox"),
+        METHOD(&NativeMapView::setFeatureState, "nativeSetFeatureState"),
+        METHOD(&NativeMapView::getFeatureState, "nativeGetFeatureState"),
+        METHOD(&NativeMapView::removeFeatureState, "nativeRemoveFeatureState"),
         METHOD(&NativeMapView::getLight, "nativeGetLight"),
         METHOD(&NativeMapView::getLayers, "nativeGetLayers"),
         METHOD(&NativeMapView::getLayer, "nativeGetLayer"),
