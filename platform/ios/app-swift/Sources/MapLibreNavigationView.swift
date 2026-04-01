@@ -40,6 +40,14 @@ struct MapLibreNavigationView: View {
                 NavigationLink("LineStyleLayerExample") {
                     LineStyleLayerExampleUIViewControllerRepresentable()
                 }
+                NavigationLink("FeatureState Circle Repro (3 features)") {
+                    FeatureStateCircleReproExampleUIViewControllerRepresentable()
+                        .edgesIgnoringSafeArea(.all)
+                }
+                NavigationLink("FeatureState Scaled Repro (18000 features)") {
+                    FeatureStateScaledReproExampleRepresentable()
+                        .edgesIgnoringSafeArea(.all)
+                }
                 NavigationLink("WebAPIDataExample") {
                     WebAPIDataExampleUIViewControllerRepresentable()
                 }

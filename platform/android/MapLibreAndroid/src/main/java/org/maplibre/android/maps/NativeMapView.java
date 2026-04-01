@@ -41,6 +41,7 @@ import org.maplibre.android.tile.TileOperation;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 // Class that wraps the native methods for convenience
@@ -1114,6 +1115,64 @@ final class NativeMapView implements NativeMap {
   }
 
   @Override
+  public void setFeatureState(@NonNull String sourceId, @Nullable String sourceLayerId,
+                              @NonNull String featureId, @NonNull HashMap<String, Object> state) {
+    if (checkState("setFeatureState")) {
+      return;
+    }
+    com.google.gson.JsonObject jsonState = new com.google.gson.JsonObject();
+    for (java.util.Map.Entry<String, Object> entry : state.entrySet()) {
+      Object value = entry.getValue();
+      if (value instanceof String) {
+        jsonState.addProperty(entry.getKey(), (String) value);
+      } else if (value instanceof Number) {
+        jsonState.addProperty(entry.getKey(), (Number) value);
+      } else if (value instanceof Boolean) {
+        jsonState.addProperty(entry.getKey(), (Boolean) value);
+      }
+    }
+    nativeSetFeatureState(sourceId, sourceLayerId, featureId, jsonState);
+  }
+
+  @Override
+  @Nullable
+  public HashMap<String, Object> getFeatureState(@NonNull String sourceId,
+                                                  @Nullable String sourceLayerId,
+                                                  @NonNull String featureId) {
+    if (checkState("getFeatureState")) {
+      return null;
+    }
+    com.google.gson.JsonObject jsonResult = nativeGetFeatureState(sourceId, sourceLayerId, featureId);
+    if (jsonResult == null) {
+      return null;
+    }
+    HashMap<String, Object> result = new HashMap<>();
+    for (java.util.Map.Entry<String, com.google.gson.JsonElement> entry : jsonResult.entrySet()) {
+      com.google.gson.JsonElement element = entry.getValue();
+      if (element.isJsonPrimitive()) {
+        com.google.gson.JsonPrimitive primitive = element.getAsJsonPrimitive();
+        if (primitive.isString()) {
+          result.put(entry.getKey(), primitive.getAsString());
+        } else if (primitive.isNumber()) {
+          result.put(entry.getKey(), primitive.getAsDouble());
+        } else if (primitive.isBoolean()) {
+          result.put(entry.getKey(), primitive.getAsBoolean());
+        }
+      }
+    }
+    return result;
+  }
+
+  @Override
+  public void removeFeatureState(@NonNull String sourceId, @Nullable String sourceLayerId,
+                                 @Nullable String featureId, @Nullable String stateKey) {
+    if (checkState("removeFeatureState")) {
+      return;
+    }
+    nativeRemoveFeatureState(sourceId, sourceLayerId, featureId, stateKey);
+  }
+
+  @Override
   public void setApiBaseUrl(String baseUrl) {
     if (checkState("setApiBaseUrl")) {
       return;
@@ -1747,6 +1806,20 @@ final class NativeMapView implements NativeMap {
 
   @Keep
   private native void nativeTriggerRepaint();
+
+  @Keep
+  private native void nativeSetFeatureState(String sourceId, String sourceLayerId,
+                                            String featureId,
+                                            com.google.gson.JsonObject state);
+
+  @Keep
+  private native com.google.gson.JsonObject nativeGetFeatureState(String sourceId,
+                                                                   String sourceLayerId,
+                                                                   String featureId);
+
+  @Keep
+  private native void nativeRemoveFeatureState(String sourceId, String sourceLayerId,
+                                               String featureId, String stateKey);
 
   @Keep
   private native boolean nativeIsRenderingStatsViewEnabled();
